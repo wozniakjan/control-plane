@@ -32,6 +32,7 @@ func (s *ApplyClusterConfigurationStep) Name() string {
 }
 
 func (s *ApplyClusterConfigurationStep) Run(operation internal.UpgradeKymaOperation, log logrus.FieldLogger) (internal.UpgradeKymaOperation, time.Duration, error) {
+	fmt.Println("DEBUG_DELETE Apply_Cluster_Configuration")
 	operation.InputCreator.SetRuntimeID(operation.InstanceDetails.RuntimeID).
 		SetInstanceID(operation.InstanceID).
 		SetShootName(operation.InstanceDetails.ShootName).
@@ -69,6 +70,7 @@ func (s *ApplyClusterConfigurationStep) Run(operation internal.UpgradeKymaOperat
 	}
 	log.Infof("Cluster configuration version %d", state.ConfigurationVersion)
 
+	fmt.Println("DEBUG_DELETE Apply_Cluster_Configuration update operation", state.ConfigurationVersion)
 	updatedOperation, repeat := s.operationManager.UpdateOperation(operation, func(operation *internal.UpgradeKymaOperation) {
 		operation.ClusterConfigurationVersion = state.ConfigurationVersion
 	}, log)

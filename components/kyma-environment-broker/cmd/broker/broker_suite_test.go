@@ -605,6 +605,12 @@ func (s *BrokerSuiteTest) AssertReconcilerStartedReconcilingWhenUpgrading(instan
 	var upgradeKymaOp *internal.UpgradeKymaOperation
 	err := wait.Poll(pollingInterval, 2*time.Second, func() (bool, error) {
 		upgradeKymaOp, err := s.db.Operations().GetUpgradeKymaOperationByInstanceID(instanceID)
+		fmt.Print("DEBUG_DELETE AssertReconcilerStartedReconcilingWhenUpgrading", err)
+		if upgradeKymaOp == nil {
+			fmt.Println("nil")
+		} else {
+			fmt.Println(upgradeKymaOp.InstanceID, upgradeKymaOp.InstanceDetails.ClusterConfigurationVersion)
+		}
 		if err != nil {
 			return false, err
 		}

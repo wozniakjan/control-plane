@@ -1,6 +1,7 @@
 package runtimeversion
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -110,6 +111,7 @@ func extractMajorVersionNumberFromVersionString(version string) (int, error) {
 
 func (rvc *RuntimeVersionConfigurator) ForUpgrade(op internal.UpgradeKymaOperation) (*internal.RuntimeVersionData, error) {
 	version, found, err := rvc.accountMapping.Get(op.GlobalAccountID, op.RuntimeOperation.SubAccountID)
+	fmt.Println("DEBUG_DELETE RuntimeVersionConfigurator ForUpgrade", op.InstanceID, version, found, err, rvc.defaultVersion)
 	if err != nil {
 		return nil, err
 	}

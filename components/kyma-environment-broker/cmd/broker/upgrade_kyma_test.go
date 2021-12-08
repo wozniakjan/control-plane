@@ -169,7 +169,7 @@ func TestKymaUpgrade_UpgradeAfterMigration(t *testing.T) {
 		]
 	},
 	"kyma": {
-		"kymaVersion": "2.0"
+		"kymaVersion": "2.0.0"
 	}
 }`)
 	oID := suite.DecodeOrchestrationID(orchestrationResp)
@@ -180,7 +180,7 @@ func TestKymaUpgrade_UpgradeAfterMigration(t *testing.T) {
 
 	suite.FinishUpgradeKymaOperationByReconciler(upgradeKymaOperationID)
 	suite.AssertClusterKymaConfig(opID, reconciler.KymaConfig{
-		Version:        "2.0",
+		Version:        "2.0.0",
 		Profile:        "Production",
 		Administrators: []string{"john.smith@email.com"},
 		Components:     suite.fixExpectedComponentListWithSMProxy(opID),
