@@ -483,6 +483,38 @@ func (s *BrokerSuiteTest) FinishUpdatingOperationByReconciler(operationID string
 	assert.NoError(s.t, err)
 }
 
+func (s *BrokerSuiteTest) FinishUpdatingOperationByReconcilerBoth(operationID string) {
+	var updatingOp *internal.UpdatingOperation
+	err := wait.Poll(pollingInterval, 2*time.Second, func() (bool, error) {
+		op, err := s.db.Operations().GetUpdatingOperationByID(operationID)
+		if err != nil {
+			return false, nil
+		}
+		if op.ProvisionerOperationID != "" {
+			updatingOp = op
+			return true, nil
+		}
+		return false, nil
+	})
+	assert.NoError(s.t, err)
+
+	var state *reconciler.State
+	for ccv := updatingOp.ClusterConfigurationVersion; ccv <= updatingOp.ClusterConfigurationVersion+1; ccv++ {
+		err = wait.Poll(pollingInterval, 2*time.Second, func() (bool, error) {
+			state, err = s.reconcilerClient.GetCluster(updatingOp.RuntimeID, ccv)
+			if err != nil {
+				return false, err
+			}
+			if state.Cluster != "" {
+				s.reconcilerClient.ChangeClusterState(updatingOp.RuntimeID, ccv, reconciler.ReadyStatus)
+				return true, nil
+			}
+			return false, nil
+		})
+		assert.NoError(s.t, err)
+	}
+}
+
 func (s *BrokerSuiteTest) AssertProvisionerStartedProvisioning(operationID string) {
 	// wait until ProvisioningOperation reaches CreateRuntime step
 	var provisioningOp *internal.ProvisioningOperation
@@ -572,21 +604,22 @@ func (s *BrokerSuiteTest) AssertReconcilerStartedReconcilingWhenUpgrading(instan
 	// wait until UpgradeOperation reaches Apply_Cluster_Configuration step
 	var upgradeKymaOp *internal.UpgradeKymaOperation
 	err := wait.Poll(pollingInterval, 2*time.Second, func() (bool, error) {
-		op, err := s.db.Operations().GetUpgradeKymaOperationByInstanceID(instanceID)
+		upgradeKymaOp, err := s.db.Operations().GetUpgradeKymaOperationByInstanceID(instanceID)
 		if err != nil {
-			return false, nil
+			return false, err
 		}
-		if op.InstanceDetails.ClusterConfigurationVersion != 0 {
-			upgradeKymaOp = op
+		if upgradeKymaOp.InstanceDetails.ClusterConfigurationVersion != 0 {
 			return true, nil
 		}
 		return false, nil
 	})
 	assert.NoError(s.t, err)
-
 	var state *reconciler.State
 	err = wait.Poll(pollingInterval, 2*time.Second, func() (bool, error) {
 		state, err = s.reconcilerClient.GetCluster(upgradeKymaOp.InstanceDetails.RuntimeID, upgradeKymaOp.InstanceDetails.ClusterConfigurationVersion)
+		if err != nil {
+			return false, err
+		}
 		if state.Cluster != "" {
 			return true, nil
 		}
@@ -877,6 +910,8 @@ func (s *BrokerSuiteTest) processReconcilingByOperationID(opID string) {
 	s.WaitForProvisioningState(opID, domain.InProgress)
 	s.AssertProvisionerStartedProvisioning(opID)
 	s.FinishProvisioningOperationByProvisioner(opID, gqlschema.OperationStateSucceeded)
+	_, err := s.gardenerClient.CoreV1beta1().Shoots(fixedGardenerNamespace).Create(context.Background(), s.fixGardenerShootForOperationID(opID), v1.CreateOptions{})
+	require.NoError(s.t, err)
 
 	// Director part
 	s.MarkDirectorWithConsoleURL(opID)

@@ -2,6 +2,7 @@ package orchestration
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"sync"
 	"time"
@@ -61,6 +62,7 @@ func (resolver *GardenerRuntimeResolver) Resolve(targets TargetSpec) ([]Runtime,
 	runtimeExcluded := map[string]bool{}
 	runtimes := []Runtime{}
 	shoots, err := resolver.getAllShoots()
+	fmt.Println("DEBUG_DELETE Resolve all shoots", len(shoots))
 	if err != nil {
 		return nil, errors.Wrapf(err, "while listing gardener shoots in namespace %s", resolver.gardenerNamespace)
 	}

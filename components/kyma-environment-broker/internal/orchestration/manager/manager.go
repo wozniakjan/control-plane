@@ -52,6 +52,8 @@ func (m *orchestrationManager) Execute(orchestrationID string) (time.Duration, e
 	if err != nil {
 		return m.failOrchestration(o, errors.Wrap(err, "while getting orchestration"))
 	}
+	m.log.Infof("DEBUG_DELETE Processing orchestration [%v] [%v] [%v] [%v] [%v]", o.OrchestrationID, o.State, o.Type, o.Description, o.IsFinished())
+	m.log.Infof("DEBUG_DELETE Processing orchestration params %+v", o.Parameters)
 
 	maintenancePolicy, err := m.getMaintenancePolicy()
 	if err != nil {
@@ -123,7 +125,7 @@ func (m *orchestrationManager) resolveOperations(o *internal.Orchestration, poli
 		if err != nil {
 			return result, errors.Wrap(err, "while resolving targets")
 		}
-
+		m.log.Infof("resolved %v runtimes from %+v", len(runtimes), o.Parameters.Targets)
 		for _, r := range runtimes {
 			windowBegin := time.Time{}
 			windowEnd := time.Time{}

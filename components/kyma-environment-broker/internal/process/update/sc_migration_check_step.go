@@ -36,7 +36,7 @@ func (s *CheckReconcilerState) Run(operation internal.UpdatingOperation, log log
 	}
 	switch state.Status {
 	case reconciler.ClusterStatusReconciling, reconciler.ClusterStatusPending:
-		log.Info("Reconciler status %v", state.Status)
+		log.Infof("Reconciler status %v", state.Status)
 		return operation, 30 * time.Second, nil
 	case reconciler.ClusterStatusReady:
 		return operation, 0, nil
