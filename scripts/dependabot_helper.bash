@@ -28,10 +28,22 @@ for pr in "${prs[@]}"; do
             sleep 5
             gh pr review "${pr}" --approve --body "${body}"
         else
-            status=$(gh pr view --json reviewDecision | jq '.reviewDecision')
-            if [[ "$status" == '"REVIEW_REQUIRED"' ]]; then
+            status=$(gh pr view --json reviewDecision | jq --raw-output '.reviewDecision')
+            if [[ "$status" == 'REVIEW_REQUIRED' ]]; then
                 gh pr review "${pr}" --approve --body "${body}"
             fi
         fi
+        while true; do
+            state=$(gh pr view "${pr}" --json state | jq --raw-output '.state')
+            case "$state" in
+                MERGED)
+                    break
+                    ;;
+                *)
+                    echo "PR ${pr} not merged yet"
+                    sleep 5
+                    ;;
+            esac
+        done
     )
 done
