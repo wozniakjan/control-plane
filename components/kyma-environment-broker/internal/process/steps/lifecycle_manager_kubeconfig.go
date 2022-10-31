@@ -2,7 +2,6 @@ package steps
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/kyma-project/control-plane/components/kyma-environment-broker/internal"
@@ -15,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// SyncKubeconfig step ensures desired state of kubeconfig secret for lifecycle manager
+// syncKubeconfig step ensures desired state of kubeconfig secret for lifecycle manager
 type syncKubeconfig struct {
 	k8sClient    client.Client
 	secretLister v1.SecretLister
@@ -100,23 +99,17 @@ func patchSecret(old, desired *corev1.Secret) *corev1.Secret {
 }
 
 func initSecret(o internal.Operation) *corev1.Secret {
-	// TODO: define common things such as namespace and labels with resource kyma.operator.kyma-project.io/v1alpha1 in one place
-	return &corev1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "kcp-system",
-			Name:      fmt.Sprintf("kubeconfig-%v", o.ShootName), // TODO: consider something else than shoot
-			Labels: map[string]string{
-				"kyma-project.io/instance-id":        o.InstanceID,
-				"kyma-project.io/runtime-id":         o.RuntimeID,
-				"kyma-project.io/broker-plan-id":     o.ProvisioningParameters.PlanID,
-				"kyma-project.io/global-account-id":  o.GlobalAccountID,
-				"operator.kyma-project.io/kyma-name": o.ShootName, // TODO: sync with kyma resource naming
-			},
+			Name:      KymaKubeconfigName(o),
 		},
 		StringData: map[string]string{
 			"config": o.Kubeconfig,
 		},
 	}
+	ApplyLabelsForLM(secret, o)
+	return secret
 }
 
 // NOTE: adapter for upgrade_kyma which is currently not using shared staged_manager
