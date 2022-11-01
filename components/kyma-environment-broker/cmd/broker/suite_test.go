@@ -56,6 +56,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -1022,7 +1023,8 @@ func fixAccountProvider() *hyperscalerautomock.AccountProvider {
 	return &accountProvider
 }
 
-func secretLister(cli kubernetes.Interface) v1.SecretLister {
+func secretLister(cli client.WithWatch) v1.SecretLister {
+	cs := kubernetes.New(cli.RESTMapper())
 	informerFact := informers.NewSharedInformerFactory(cli, time.Second*30)
 	lister := informerFact.Core().V1().Secrets().Lister()
 	informerFact.Start(context.Background().Done())
