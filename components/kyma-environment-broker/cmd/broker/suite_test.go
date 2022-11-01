@@ -54,6 +54,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -618,11 +620,14 @@ func NewProvisioningSuite(t *testing.T, multiZoneCluster bool, controlPlaneFailu
 	reconcilerClient := reconciler.NewFakeClient()
 
 	eventBroker := event.NewPubSub(logs)
+	informerFact := informers.NewSharedInformerFactory(cli, time.Second*30)
+	lister := informerFact.Core().V1().Secrets().Lister()
+	informerFact.Start(context.Background().Done())
 
 	provisionManager := process.NewStagedManager(db.Operations(), eventBroker, cfg.OperationTimeout, logs.WithField("provisioning", "manager"))
 	provisioningQueue := NewProvisioningProcessingQueue(ctx, provisionManager, workersAmount, cfg, db, provisionerClient,
 		directorClient, inputFactory, avsDel, internalEvalAssistant, externalEvalCreator, internalEvalUpdater, runtimeVerConfigurator,
-		runtimeOverrides, bundleBuilder, edpClient, accountProvider, reconcilerClient, fakeK8sClientProvider(cli), cli, nil, logs)
+		runtimeOverrides, bundleBuilder, edpClient, accountProvider, reconcilerClient, fakeK8sClientProvider(cli), cli, lister, logs)
 
 	provisioningQueue.SpeedUp(10000)
 	provisionManager.SpeedUp(10000)
@@ -1015,4 +1020,11 @@ func fixAccountProvider() *hyperscalerautomock.AccountProvider {
 	accountProvider.On("MarkUnusedGardenerSecretBindingAsDirty", hyperscaler.Azure, mock.Anything).Return(nil)
 	accountProvider.On("MarkUnusedGardenerSecretBindingAsDirty", hyperscaler.AWS, mock.Anything).Return(nil)
 	return &accountProvider
+}
+
+func secretLister(cli kubernetes.Interface) v1.SecretLister {
+	informerFact := informers.NewSharedInformerFactory(cli, time.Second*30)
+	lister := informerFact.Core().V1().Secrets().Lister()
+	informerFact.Start(context.Background().Done())
+	return lister
 }
